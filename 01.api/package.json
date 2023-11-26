@@ -1,0 +1,10 @@
+{
+  "name": "01.api",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.126",
+    "typescript": "^5.2.2"
+  }
+}
