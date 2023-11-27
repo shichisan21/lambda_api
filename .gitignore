@@ -43,3 +43,4 @@ terraform.rc
 lambda_package
 build
 node_modules
+.http
