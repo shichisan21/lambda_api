@@ -1,3 +1,18 @@
+variable "dynamo_table_name" {
+  type   = string
+  default = "nothing"
+}
+variable "aws_user_region" {
+  type   = string
+  default = "nothing"
+}
+variable "aws_dynamo_table_arn" {
+  type   = string
+  default = "nothing"
+}
+
+
+
 data "archive_file" "example_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../01.api"
@@ -54,11 +69,13 @@ resource "aws_iam_policy" "lambda_policy" {
         Action   = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
-          "logs:PutLogEvents"
+          "logs:PutLogEvents",
+           "dynamodb:Scan"  // DynamoDB Scan 操作を許可
         ]
         Resource = [
           "${aws_cloudwatch_log_group.example_log_group.arn}",
-          "${aws_cloudwatch_log_group.example_log_group.arn}:*"
+          "${aws_cloudwatch_log_group.example_log_group.arn}:*",
+          var.aws_dynamo_table_arn,
         ]
       }
     ]

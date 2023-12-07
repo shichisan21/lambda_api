@@ -44,4 +44,4 @@ lambda_package
 build
 node_modules
 .http
-variables.tf
+variables.tfvars
