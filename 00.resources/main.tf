@@ -15,8 +15,8 @@ resource "aws_lambda_function" "example_lambda" {
 
   environment {
     variables = {
-      DYNAMO_TABLE_NAME = "example_value"
-      AWS_USER_REGION = "example_value"
+      DYNAMO_TABLE_NAME = var.dynamo_table_name
+      AWS_USER_REGION = var.aws_user_region
       // 他の環境変数もここに追加できます
     }
   }
