@@ -12,6 +12,14 @@ resource "aws_lambda_function" "example_lambda" {
   filename         = data.archive_file.example_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.example_zip.output_path)
   role = aws_iam_role.lambda_role.arn
+
+  environment {
+    variables = {
+      DYNAMO_TABLE_NAME = "example_value"
+      AWS_USER_REGION = "example_value"
+      // 他の環境変数もここに追加できます
+    }
+  }
 }
 
 resource "aws_iam_role" "lambda_role" {
