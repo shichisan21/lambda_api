@@ -5,9 +5,11 @@
   "license": "MIT",
   "devDependencies": {
     "@types/aws-lambda": "^8.10.126",
+    "prisma": "^5.11.0",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@aws-sdk/credential-providers": "^3.465.0"
+    "@aws-sdk/credential-providers": "^3.465.0",
+    "@prisma/client": "^5.11.0"
   }
 }
