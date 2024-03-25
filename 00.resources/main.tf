@@ -17,16 +17,34 @@ data "archive_file" "example_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../01.api"
   output_path = "${path.module}/lambda_package/example_lambda.zip"
-  excludes    = ["src", "*.ts", "*.map","tsconfig.json"]
+  excludes    = ["src", "prisma","*.ts", "*.map","tsconfig.json",".env",".gitignore", ".http"]
 }
+
+# data "archive_file" "nodejs18_zip" {
+#   type        = "zip"
+#   source_dir  = "${path.module}/nodejs"
+#   output_path = "${path.module}/lambda_layers/nodejs18_layer.zip"
+# }
+
+
+# resource "aws_lambda_layer_version" "nodejs18_layer" {
+#   layer_name     = "nodejs18-layer"
+#   filename       = data.archive_file.nodejs18_zip.output_path
+#   compatible_runtimes = ["nodejs18.x"]
+#   source_code_hash = filebase64sha256(data.archive_file.nodejs18_zip.output_path)
+# }
 
 resource "aws_lambda_function" "example_lambda" {
   function_name    = "example-lambda"
   handler          = "build/index.handler"
   runtime          = "nodejs18.x"
+  s3_bucket = "explore-assistant-bucket"
+  s3_key = 
   filename         = data.archive_file.example_zip.output_path
   source_code_hash = filebase64sha256(data.archive_file.example_zip.output_path)
   role = aws_iam_role.lambda_role.arn
+  # layers = [aws_lambda_layer_version.nodejs18_layer.arn]
+
 
   environment {
     variables = {
@@ -35,6 +53,10 @@ resource "aws_lambda_function" "example_lambda" {
       // 他の環境変数もここに追加できます
     }
   }
+}
+
+resource "aws_s3_bucket" "explore-assistant-bucket" {
+  bucket = "explore-assistant-bucket"
 }
 
 resource "aws_iam_role" "lambda_role" {
