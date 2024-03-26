@@ -17,7 +17,7 @@ data "archive_file" "example_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../01.api"
   output_path = "${path.module}/lambda_package/example_lambda.zip"
-  excludes    = ["src", "prisma","*.ts", "*.map","tsconfig.json",".env",".gitignore", ".http"]
+  excludes    = ["src", "*.ts", "*.map","tsconfig.json",".gitignore", ".http"]
 }
 
 # data "archive_file" "nodejs18_zip" {
@@ -34,15 +34,24 @@ data "archive_file" "example_zip" {
 #   source_code_hash = filebase64sha256(data.archive_file.nodejs18_zip.output_path)
 # }
 
+resource "aws_s3_bucket" "explore_assistant_bucket" {
+  bucket = "explore-assistant-bucket"
+}
+
+resource "aws_s3_object" "lambda_zip" {
+  bucket = aws_s3_bucket.explore_assistant_bucket.bucket
+  key    = "lambda_package/example_lambda.zip"
+  source = data.archive_file.example_zip.output_path
+}
+
 resource "aws_lambda_function" "example_lambda" {
   function_name    = "example-lambda"
   handler          = "build/index.handler"
   runtime          = "nodejs18.x"
-  s3_bucket = "explore-assistant-bucket"
-  s3_key = 
-  filename         = data.archive_file.example_zip.output_path
+  s3_bucket        = aws_s3_bucket.explore_assistant_bucket.bucket
+  s3_key           = aws_s3_object.lambda_zip.key
   source_code_hash = filebase64sha256(data.archive_file.example_zip.output_path)
-  role = aws_iam_role.lambda_role.arn
+  role             = aws_iam_role.lambda_role.arn
   # layers = [aws_lambda_layer_version.nodejs18_layer.arn]
 
 
@@ -55,9 +64,7 @@ resource "aws_lambda_function" "example_lambda" {
   }
 }
 
-resource "aws_s3_bucket" "explore-assistant-bucket" {
-  bucket = "explore-assistant-bucket"
-}
+
 
 resource "aws_iam_role" "lambda_role" {
   name = "example-lambda-role"
