@@ -42,6 +42,7 @@ resource "aws_s3_object" "lambda_zip" {
   bucket = aws_s3_bucket.explore_assistant_bucket.bucket
   key    = "lambda_package/example_lambda.zip"
   source = data.archive_file.example_zip.output_path
+  etag   = filemd5(data.archive_file.example_zip.output_path)
 }
 
 resource "aws_lambda_function" "example_lambda" {
