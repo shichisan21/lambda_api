@@ -12,7 +12,6 @@ variable "aws_dynamo_table_arn" {
 }
 
 
-
 data "archive_file" "example_zip" {
   type        = "zip"
   source_dir  = "${path.module}/../01.api"
@@ -53,8 +52,6 @@ resource "aws_lambda_function" "example_lambda" {
   s3_key           = aws_s3_object.lambda_zip.key
   source_code_hash = filebase64sha256(data.archive_file.example_zip.output_path)
   role             = aws_iam_role.lambda_role.arn
-  # layers = [aws_lambda_layer_version.nodejs18_layer.arn]
-
 
   environment {
     variables = {
@@ -64,8 +61,6 @@ resource "aws_lambda_function" "example_lambda" {
     }
   }
 }
-
-
 
 resource "aws_iam_role" "lambda_role" {
   name = "example-lambda-role"
@@ -124,28 +119,53 @@ resource "aws_cloudwatch_log_group" "example_log_group" {
 
 
 
-resource "aws_apigatewayv2_api" "example_api" {
-  name          = "example-api"
-  protocol_type = "HTTP"
-  description   = "Example API Gateway for Lambda"
+resource "aws_api_gateway_rest_api" "example_api" {
+  name        = "example-api"
+  description = "Example REST API Gateway for Lambda"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "execute-api:/*/*/*"
+      }
+    ]
+  })
 }
 
-resource "aws_apigatewayv2_integration" "example_lambda_integration" {
-  api_id           = aws_apigatewayv2_api.example_api.id
-  integration_type = "AWS_PROXY"
-  integration_uri  = aws_lambda_function.example_lambda.invoke_arn
+resource "aws_api_gateway_resource" "example_resource" {
+  rest_api_id = aws_api_gateway_rest_api.example_api.id
+  parent_id   = aws_api_gateway_rest_api.example_api.root_resource_id
+  path_part   = "{proxy+}"
 }
 
-resource "aws_apigatewayv2_route" "example_route" {
-  api_id    = aws_apigatewayv2_api.example_api.id
-  route_key = "ANY /{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.example_lambda_integration.id}"
+resource "aws_api_gateway_method" "example_method" {
+  rest_api_id   = aws_api_gateway_rest_api.example_api.id
+  resource_id   = aws_api_gateway_resource.example_resource.id
+  http_method   = "GET"
+  authorization = "NONE"
 }
 
-resource "aws_apigatewayv2_stage" "example_stage" {
-  api_id      = aws_apigatewayv2_api.example_api.id
-  name        = "default"
-  auto_deploy = true
+resource "aws_api_gateway_integration" "example_lambda_integration" {
+  rest_api_id = aws_api_gateway_rest_api.example_api.id
+  resource_id = aws_api_gateway_resource.example_resource.id
+  http_method = aws_api_gateway_method.example_method.http_method
+
+  integration_http_method = "GET"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.example_lambda.invoke_arn
+}
+
+resource "aws_api_gateway_deployment" "example_deployment" {
+  depends_on = [
+    aws_api_gateway_integration.example_lambda_integration
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.example_api.id
+  stage_name  = "default"
 }
 
 resource "aws_lambda_permission" "api_gateway" {
@@ -153,7 +173,6 @@ resource "aws_lambda_permission" "api_gateway" {
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.example_lambda.function_name
   principal     = "apigateway.amazonaws.com"
-
-  # API Gatewayの全ステージからの呼び出しを許可する
-  source_arn = "${aws_apigatewayv2_api.example_api.execution_arn}/*/*"
+  source_arn    = "${aws_api_gateway_rest_api.example_api.execution_arn}/*/*"
 }
+
